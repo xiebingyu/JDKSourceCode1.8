@@ -56,6 +56,9 @@ import sun.misc.Unsafe;
  *
  * @since 1.6
  * @author Doug Lea
+ *
+ * 抽象队列同步器
+ *
  */
 public abstract class AbstractQueuedLongSynchronizer
     extends AbstractOwnableSynchronizer
@@ -355,6 +358,10 @@ public abstract class AbstractQueuedLongSynchronizer
 
     /**
      * Inserts node into queue, initializing if necessary. See picture above.
+     * 这里绑定运用的是双向绑定，
+     * 前绑定 next 为 后
+     * 后绑定 prev 为 前。
+     * 这里插入保证了开始节点没有prev
      * @param node the node to insert
      * @return node's predecessor
      */
@@ -376,7 +383,7 @@ public abstract class AbstractQueuedLongSynchronizer
 
     /**
      * Creates and enqueues node for current thread and given mode.
-     *
+     * 加入一个等待线程
      * @param mode Node.EXCLUSIVE for exclusive, Node.SHARED for shared
      * @return the new node
      */

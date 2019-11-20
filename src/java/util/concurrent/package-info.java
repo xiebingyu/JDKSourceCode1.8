@@ -42,6 +42,11 @@
  * {@link java.util.concurrent.locks} and
  * {@link java.util.concurrent.atomic} packages.
  *
+ * 该公共程序包主要用于多线程编程，该包内包含了一些小的，标准的，可以扩展的框架，
+ * 同时提供了一些有用的，复杂的实现。作为简要的描述，也可以查看下面两个包文件
+ * {@link java.util.concurrent.locks} and
+ * {@link java.util.concurrent.atomic} packages.
+ *
  * <h2>Executors</h2>
  *
  * <b>Interfaces.</b>

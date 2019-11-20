@@ -27,7 +27,7 @@
  *
  *
  *
- *
+ * 在f JCP JSR-166专家组的帮助下，由Doug Lea编写并发布到开放域
  * Written by Doug Lea with assistance from members of JCP JSR-166
  * Expert Group and released to the public domain, as explained at
  * http://creativecommons.org/publicdomain/zero/1.0/
@@ -48,11 +48,22 @@ import sun.misc.Unsafe;
  * @author Doug Lea
  */
 public class AtomicBoolean implements java.io.Serializable {
+
     private static final long serialVersionUID = 4654671469794556979L;
-    // setup to use Unsafe.compareAndSwapInt for updates
+
+    /***
+     * 定义一个内存操作对象。
+     */
     private static final Unsafe unsafe = Unsafe.getUnsafe();
+
+    /***
+     * 存放的位移偏移量
+     */
     private static final long valueOffset;
 
+    /**
+     * 获取当前值所在内存中的位移偏移量
+     */
     static {
         try {
             valueOffset = unsafe.objectFieldOffset
@@ -60,40 +71,43 @@ public class AtomicBoolean implements java.io.Serializable {
         } catch (Exception ex) { throw new Error(ex); }
     }
 
+    /***
+     * 定义一个多线程，有序的，可见的值
+     * 注意volatile主要是乐观锁的实现方式
+     */
     private volatile int value;
 
-    /**
-     * Creates a new {@code AtomicBoolean} with the given initial value.
-     *
-     * @param initialValue the initial value
+    /***
+     * 赋值bool类型。true为1，false 为0
+     * @param initialValue
      */
     public AtomicBoolean(boolean initialValue) {
         value = initialValue ? 1 : 0;
     }
 
     /**
-     * Creates a new {@code AtomicBoolean} with initial value {@code false}.
+     * 新建一个bool类型，不进行初始化value值
      */
     public AtomicBoolean() {
     }
 
     /**
-     * Returns the current value.
-     *
-     * @return the current value
+     * 获取传入的值
      */
     public final boolean get() {
         return value != 0;
     }
 
     /**
-     * Atomically sets the value to the given updated value
-     * if the current value {@code ==} the expected value.
-     *
-     * @param expect the expected value
-     * @param update the new value
-     * @return {@code true} if successful. False return indicates that
-     * the actual value was not equal to the expected value.
+     * 比较并且交换该值，乐观锁实现
+     * 如果当前线程获取的值是跟{expect}相同，尼玛就更换为update的值
+     * 同时返回该对象更新前的值。
+     * eg: 更新前 {oldValue = false}, {expect=true},{update=false}
+     * 执行由于 expect！=oldValue，故不执行，直接返回{oldValue=false},
+     *  {value=OldValue}
+     * eg： 更新前 {oldValue = true}, {expect=true},{update=false},
+     *  执行由于 expect==oldValue，故执行，返回{oldValue=false}，同时
+     *  {value =  update}
      */
     public final boolean compareAndSet(boolean expect, boolean update) {
         int e = expect ? 1 : 0;
@@ -102,16 +116,15 @@ public class AtomicBoolean implements java.io.Serializable {
     }
 
     /**
-     * Atomically sets the value to the given updated value
-     * if the current value {@code ==} the expected value.
-     *
-     * <p><a href="package-summary.html#weakCompareAndSet">May fail
-     * spuriously and does not provide ordering guarantees</a>, so is
-     * only rarely an appropriate alternative to {@code compareAndSet}.
-     *
-     * @param expect the expected value
-     * @param update the new value
-     * @return {@code true} if successful
+     * 比较并且交换该值，乐观锁实现
+     * 如果当前线程获取的值是跟{expect}相同，尼玛就更换为update的值
+     * 同时返回该对象更新前的值。
+     * eg: 更新前 {oldValue = false}, {expect=true},{update=false}
+     * 执行由于 expect！=oldValue，故不执行，直接返回{oldValue=false},
+     *  {value=OldValue}
+     * eg： 更新前 {oldValue = true}, {expect=true},{update=false},
+     *  执行由于 expect==oldValue，故执行，返回{oldValue=false}，同时
+     *  {value =  update}
      */
     public boolean weakCompareAndSet(boolean expect, boolean update) {
         int e = expect ? 1 : 0;
@@ -120,30 +133,25 @@ public class AtomicBoolean implements java.io.Serializable {
     }
 
     /**
-     * Unconditionally sets to the given value.
-     *
-     * @param newValue the new value
+     * 设置新的{value}
      */
     public final void set(boolean newValue) {
         value = newValue ? 1 : 0;
     }
 
-    /**
-     * Eventually sets to the given value.
-     *
-     * @param newValue the new value
-     * @since 1.6
+    /***
+     * 只需要保证有序条件下更新数据
+     * @param newValue
      */
     public final void lazySet(boolean newValue) {
         int v = newValue ? 1 : 0;
         unsafe.putOrderedInt(this, valueOffset, v);
     }
 
-    /**
-     * Atomically sets to the given value and returns the previous value.
-     *
-     * @param newValue the new value
-     * @return the previous value
+    /***
+     *  将值更新为{newValue},如果{value}!={newValue}就替换
+     * @param newValue
+     * @return
      */
     public final boolean getAndSet(boolean newValue) {
         boolean prev;

@@ -54,45 +54,66 @@ import sun.misc.Unsafe;
 public class AtomicInteger extends Number implements java.io.Serializable {
     private static final long serialVersionUID = 6214790243416807050L;
 
-    // setup to use Unsafe.compareAndSwapInt for updates
+    /***
+     * 定义一个unsafe的内存读取器，
+     * 该unsafe主要是用户java操作内存信息
+     */
     private static final Unsafe unsafe = Unsafe.getUnsafe();
+
+    /***
+     * 数据存放的偏移量
+     */
     private static final long valueOffset;
 
     static {
         try {
+            /**
+             * 从当前调用类重读取value的偏移量，value使用里volatile可以
+             * 保证其读写的有序性和可见性，
+             * 那么unsafe会在当前类<see=self></see>地址下读取对象的偏移量
+             *
+             *
+             * staticFieldOffset方法用于获取静态属性Field在对象中的偏移量，
+             * 读写静态属性时必须获取其偏移量。
+             * objectFieldOffset方法用于获取非静态属性Field在对象实例中的偏移量，
+             * 读写对象的非静态属性时会用到这个偏移量。
+             * staticFieldBase方法用于返回Field所在的对象。
+             * arrayBaseOffset方法用于返回数组中第一个元素实际地址相对整个数组对象的地址的偏移量
+             * 。arrayIndexScale方法用于计算数组中第一个元素所占用的内存空间。
+             */
             valueOffset = unsafe.objectFieldOffset
                 (AtomicInteger.class.getDeclaredField("value"));
+
         } catch (Exception ex) { throw new Error(ex); }
     }
 
+    /***
+     * 有序可见的值，乐观锁实现方式
+     */
     private volatile int value;
 
     /**
-     * Creates a new AtomicInteger with the given initial value.
-     *
-     * @param initialValue the initial value
+     * 初始化值
      */
     public AtomicInteger(int initialValue) {
         value = initialValue;
     }
 
     /**
-     * Creates a new AtomicInteger with initial value {@code 0}.
+     * 初始化值，默认
      */
     public AtomicInteger() {
     }
 
     /**
-     * Gets the current value.
-     *
-     * @return the current value
+     * 获取{value}
      */
     public final int get() {
         return value;
     }
 
     /**
-     * Sets to the given value.
+     * 设置{value}
      *
      * @param newValue the new value
      */
@@ -100,23 +121,33 @@ public class AtomicInteger extends Number implements java.io.Serializable {
         value = newValue;
     }
 
-    /**
-     * Eventually sets to the given value.
+    /***
+     * 有序写入只保证写入的有序性，不保证可见性，
+     * 就是说一个线程的写入不保证其他线程立马可见。
      *
-     * @param newValue the new value
-     * @since 1.6
+     * 这里是指在该偏移量上面写入新的值
      */
     public final void lazySet(int newValue) {
+
         unsafe.putOrderedInt(this, valueOffset, newValue);
     }
 
     /**
-     * Atomically sets to the given value and returns the old value.
-     *
-     * @param newValue the new value
-     * @return the previous value
+     *  实现更新新值，乐观锁实现，如果该值是其他线程没有修改的，
+     *  那么就替换掉新值，否则不做处理。
      */
     public final int getAndSet(int newValue) {
+        /**
+         * get and set 实现为下
+         *    public final int getAndSetInt(Object var1, long var2, int var4) {
+         *         int var5;
+         *         do {
+         *             var5 = this.getIntVolatile(var1, var2);
+         *         } while(!this.compareAndSwapInt(var1, var2, var5, var4));
+         *
+         *         return var5;
+         *     }
+         */
         return unsafe.getAndSetInt(this, valueOffset, newValue);
     }
 
